@@ -1,25 +1,44 @@
-### Amazon验证码识别
+# Amazon验证码识别
 
 在破解Amazon的验证码的时候，利用机器学习得到验证码破解精度超过70%，主要是训练样本不够，如果在足够的样本下达到90%是非常有可能的。
 update后，样本数为2800多，破解精度达到90%以上，perfect!
 
-### 文档结构为
+## 文档结构为
 ```
--- iconset1
+-- zimu  分好類的字母們
    -- ...
 -- jpg
-   -- img
+   -- img   純生驗證碼
+   -- good  識別出來的驗證碼
+   -- letter 切割準備訓練的字母
    -- jpg
       -- ...
    -- error.txt
--- py
+-- py   程序
    -- crack.py
 ```
 
-### 需要的库
-`pip3 install pillow` or `easy_install Pillow`
+## 需要的库
+```
+pip3 install pillow
+easy_install Pillow
+```
 
-### 必须文件下载地址
+## 使用説明
+
+```
+1. 先運行py/mkdirtool.py建立文件夾
+2. 跑py/training_samples.py對jpg/img下驗證碼進行切割，切割后再文件夾jpg/letter
+3. 手工將jpg/letter下字目放在zimu文件夾下a-z26個字母中，作爲分好類的字母，不用太多
+4. 跑py/assigned_samples.py將jpg/letter下的訓練字母，自動分類到zimu文件夾下a-z26個字母
+5. 分好類后人工看對不對，糾錯！
+6. 跑AmazonCaptcha.py，對jpg/img驗證碼進行識別，保存在jpg/good文件夾下
+
+```
+
+
+
+## 必须文件下载地址
 [Amazon验证码识别](https://github.com/TTyb/AmazonCaptcha)
 
 > 1.读取图片，打印图片的结构直方图
@@ -47,12 +66,15 @@ if __name__ == '__main__':
     jpgname = listfiles(path, "jpg")
 
 ```
+
 jpgname为一个数组，将文件夹中的jpg文件全部遍历出来
+
 ```
 ['../jpg/img/056567f5e15f8d5f46bc5e07905009fd.jpg', '../jpg/img/05796993cf0a3c779b6fe83db2a27ac3.jpg', '../jpg/img/073847b62252c63829850cb1bd49601e.jpg', '../jpg/img/07aafc4694264509135490b85630aaf5.jpg', '../jpg/img/07d126e49e42143e0d21a0dafd522ac8.jpg', '../jpg/img/07dbfd0bd41d11e9475a96bc724e9f56.jpg', '../jpg/img/07fb8e7163e2ebd36e90c209502051ed.jpg', '../jpg/img/08ff7dc78f348ad7e4309eda9588a5f5.jpg', '../jpg/img/09dc3340f3c4a77c61cd18da7b3eca82.jpg', '../jpg/img/0b354ba9e9a132075fcc3dff6f517106.jpg', '../jpg/img/0bdca69fec2089cfaa46b458f5e483c3.jpg', '../jpg/img/0d0b1d778e00a1c84001d5838b9f5ef1.jpg', '../jpg/img/0d14f8838c30f6b54f266d9eb02e1b93.jpg', '../jpg/img/0e8d3e12d36d39314acfcd3bb8c3970a.jpg',...]
 ```
 
 读取图片，得到图片的结构直方图
+
 ```
 from PIL import Image
 
@@ -63,13 +85,22 @@ for item in jpgname:
     # jpg不是最低像素，gif才是，所以要转换像素
     im = im.convert("P")
 
-    # 打印像素直方图
+    # 打印像素直方图,灰度值统计
     his = im.histogram()
 ```
+
+
 像素直方图打印结果为
+
 `[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 1, 2, 0, 1, 0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 3, 1, 3, 3, 0, 0, 0, 0, 0, 0, 1, 0, 3, 2, 132, 1, 1, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 15, 0, 1, 0, 1, 0, 0, 8, 1, 0, 0, 0, 0, 1, 6, 0, 2, 0, 0, 0, 0, 18, 1, 1, 1, 1, 1, 2, 365, 115, 0, 1, 0, 0, 0, 135, 186, 0, 0, 1, 0, 0, 0, 116, 3, 0, 0, 0, 0, 0, 21, 1, 1, 0, 0, 0, 2, 10, 2, 0, 0, 0, 0, 2, 10, 0, 0, 0, 0, 1, 0, 625]`
 
 该数组长度为255，每一个元素代表（0-255）颜色的多少，例如最后一个元素为625，即255（代表的是白色）最多，组合在一起
+
+以上为灰度值
+
+根据重要性及其它指标，将三个分量以不同的权值进行加权平均。由于人眼对绿色的敏感最高，对蓝色敏感最低，因此，按下式对RGB三分量进行加权平均能得到较合理的灰度图像。
+f(i,j)=0.30R(i,j)+0.59G(i,j)+0.11B(i,j))
+
 ```
 values = {}
 for i in range(0, 256):
@@ -261,10 +292,10 @@ import os
 
 imageset = []
 for letter in iconset:
-    for img in os.listdir('../iconset1/%s/' % (letter)):
+    for img in os.listdir('../zimu/%s/' % (letter)):
         temp = []
         if img != "Thumbs.db" and img != ".DS_Store":
-            temp.append(buildvector(Image.open("../iconset1/%s/%s" % (letter, img))))
+            temp.append(buildvector(Image.open("../zimu/%s/%s" % (letter, img))))
         imageset.append({letter: temp})
 ```
 

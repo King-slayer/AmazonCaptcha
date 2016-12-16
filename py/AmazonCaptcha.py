@@ -7,7 +7,7 @@ from PIL import Image
 import math
 import os
 from concurrent.futures import ThreadPoolExecutor
-
+import shutil
 
 # 找出文件夹下所有xml后缀的文件
 def listfiles(rootdir, prefix='.xml'):
@@ -54,16 +54,18 @@ def buildvector(im):
 
 # 全局变量
 path = "../jpg/img/"
+resultpath = "../jpg/good/"
 iconset = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
            'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
 imageset = []
 for letter in iconset:
-    for img in os.listdir('../iconset1/%s/' % (letter)):
+    for img in os.listdir('../zimu/%s/' % (letter)):
         temp = []
         if img != "":
-            temp.append(buildvector(Image.open("../iconset1/%s/%s" % (letter, img))))
+            temp.append(buildvector(Image.open("../zimu/%s/%s" % (letter, img))))
         imageset.append({letter: temp})
+
 
 def main(item):
     try:
@@ -167,7 +169,7 @@ def main(item):
 
         # 得到拼接后的验证码识别图像
         newname = str("".join(newjpgname))
-        os.rename(item, path + newname + ".jpg")
+        shutil.copy(item, resultpath + newname + ".jpg")
     except Exception as err:
         print(err)
         # 如果错误就记录下来
@@ -177,12 +179,12 @@ def main(item):
 
 
 # 开启多进程
-def runthreading():
-    pool = ThreadPoolExecutor(5)
+def runthreading(num=1):
+    pool = ThreadPoolExecutor(num)
     jpgname = listfiles(path, "jpg")
     for item in jpgname:
         # 识别过的就不再识别了
-        if len(item)>30:
+        if len(item) > 30:
             pool.submit(main, item)
 
 

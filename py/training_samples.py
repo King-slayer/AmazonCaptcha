@@ -1,12 +1,14 @@
 #!/usr/bin/python3.4
 # -*- coding: utf-8 -*-
 
-# 本脚本为切割图片变成训练样本
+# 切割验证码图片
+
 from PIL import Image
 import time
 import random
 import os
 from PIL import Image
+import hashlib
 
 
 # 找出文件夹下所有xml后缀的文件
@@ -22,14 +24,6 @@ def listfiles(rootdir, prefix='.xml'):
             pass
 
 
-# 创建文件夹
-def createjia(path):
-    try:
-        os.makedirs(path)
-    except:
-        pass
-
-
 if __name__ == '__main__':
     path = "../jpg/img/"
     jpgname = listfiles(path, "jpg")
@@ -41,7 +35,7 @@ if __name__ == '__main__':
             # jpg不是最低像素，gif才是，所以要转换像素
             im = im.convert("P")
 
-            # 打印像素直方图
+            # 打印像素直方图,灰度值
             his = im.histogram()
 
             values = {}
@@ -117,15 +111,20 @@ if __name__ == '__main__':
             for letter in letters:
                 # (切割的起始横坐标，起始纵坐标，切割的宽度，切割的高度)
                 im3 = im2.crop((letter[0], 0, letter[1], im2.size[1]))
-                # 随机生成0-10000的数字
-                a = random.randint(0, 10000)
-                # 更改成用时间命名
-                im3.save("../jpg/letter/%s.gif" % (time.strftime('%Y%m%d%H%M%S', time.localtime()) + str(a)))
+                # hash文件命名
+                youkown = list(im3.getdata())
+                youkownd = []
+                for d in youkown:
+                    youkownd.append(str(d))
+                m = hashlib.md5()
+                m.update(",".join(youkownd).encode("utf-8"))
+                filename = m.hexdigest()
+                im3.save("../jpg/letter/%s.gif" % filename)
                 count += 1
 
         except Exception as err:
             print(err)
             # 如果错误就记录下来
-            file = open(",,/jpg/error.txt", "a")
+            file = open("../jpg/error.txt", "a")
             file.write("\n" + item)
             file.close()
